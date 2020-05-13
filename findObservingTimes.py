@@ -38,11 +38,14 @@ def getObjects():
             desc = config["OBJECTS"].getboolean("SQLDESC", fallback=True)
 
             for col in datacols:
-                res = conn.execute(f"SELECT {idcol} FROM {table} ORDER BY {col} {'DESC' if desc else 'ASC'};")
-                sqlObjects += list(res)
+                res = conn.execute(f"SELECT {idcol} FROM {table} ORDER BY {col} {'DESC' if desc else 'ASC'} LIMIT {topN};")
+                for r in res.fetchall():
+                    sqlObjects.append(r[0])
         else:
             res = conn.execute(f"SELECT {idcol} FROM {table};")
-            sqlObjects += list(res)
+
+            for r in res.fetchall():
+                sqlObjects.append(r[0])
 
         # Disconnect from database
         engine.dispose()
@@ -115,10 +118,9 @@ def main():
         eph = getEphemerides(objectID)
 
         if eph:
+            print(f"{objectID}: Observable times found")
             ephArr.append(eph)
             t_jd = Time(eph["datetime_jd"], format='jd')
-
-            print(f"{objectID}: Found observable times")
 
             ephCols = config["OUTPUT"].get("COLUMNS", fallback=None)
             if ephCols:
